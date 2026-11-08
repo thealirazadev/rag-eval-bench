@@ -1,0 +1,17 @@
+# ragbench run bench.yaml
+dataset: data/help-center
+k: 3
+chunkers:
+  - name: whole-document
+    type: document
+  - name: paragraph
+    type: paragraph
+    max_words: 40
+  - name: fixed-20-overlap-5
+    type: fixed
+    size: 20
+    overlap: 5
+retrievers:
+  - bm25
+  - dense:trigram
+  - hybrid:trigram

@@ -1,0 +1,20 @@
+{"id": "q1", "text": "how much does the team plan cost per month", "relevant": ["billing-plans"]}
+{"id": "q2", "text": "can I get my money back after buying a yearly plan", "relevant": ["refunds"]}
+{"id": "q3", "text": "what happens to my data when I cancel", "relevant": ["cancel", "export"]}
+{"id": "q4", "text": "download all my clients as a spreadsheet", "relevant": ["export"]}
+{"id": "q5", "text": "does okta login work", "relevant": ["sso"]}
+{"id": "q6", "text": "can I use SMS for two factor codes", "relevant": ["two-factor"]}
+{"id": "q7", "text": "lost my phone with the authenticator app", "relevant": ["two-factor"]}
+{"id": "q8", "text": "password reset email never arrived", "relevant": ["reset-password"]}
+{"id": "q9", "text": "send the same invoice to a client every month automatically", "relevant": ["invoices-recurring"]}
+{"id": "q10", "text": "charge clients extra when they pay late", "relevant": ["late-fees"]}
+{"id": "q11", "text": "where do the exchange rates come from", "relevant": ["currencies"]}
+{"id": "q12", "text": "invoice a business in germany without charging vat", "relevant": ["tax"]}
+{"id": "q13", "text": "let customers pay by credit card", "relevant": ["integrations-stripe"]}
+{"id": "q14", "text": "who pays the card processing fees", "relevant": ["integrations-stripe"]}
+{"id": "q15", "text": "getting 429 too many requests from the api", "relevant": ["api-limits"]}
+{"id": "q16", "text": "can a member delete a client", "relevant": ["team-roles"]}
+{"id": "q17", "text": "who is allowed to cancel the subscription", "relevant": ["team-roles", "cancel"]}
+{"id": "q18", "text": "is there an uptime guarantee", "relevant": ["billing-plans"]}
+{"id": "q19", "text": "refunds for monthly subscriptions", "relevant": ["refunds"]}
+{"id": "q20", "text": "how long is the password reset link valid", "relevant": ["reset-password"]}
