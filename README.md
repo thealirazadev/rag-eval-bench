@@ -27,28 +27,34 @@ uv run ragbench run bench.yaml --json results/help-center.json
 20 queries written the way users ask, not the way the articles are worded. With the offline trigram
 embedder (k = 3):
 
-| chunking | retriever | chunks | recall@3 | MRR@3 | nDCG@3 | ms/query |
-|---|---|---:|---:|---:|---:|---:|
-| paragraph | bm25 | 17 | 0.950 | 0.950 | 0.950 | 0.01 |
-| whole-document | bm25 | 14 | 0.950 | 0.950 | 0.950 | 0.01 |
-| paragraph | hybrid:trigram | 17 | 0.950 | 0.950 | 0.946 | 0.48 |
-| fixed-20-overlap-5 | hybrid:trigram | 36 | 0.950 | 0.925 | 0.932 | 0.95 |
-| whole-document | hybrid:trigram | 14 | 0.950 | 0.925 | 0.932 | 0.39 |
-| fixed-20-overlap-5 | bm25 | 36 | 0.950 | 0.900 | 0.913 | 0.02 |
-| fixed-20-overlap-5 | dense:trigram | 36 | 0.925 | 0.925 | 0.912 | 0.92 |
-| paragraph | dense:trigram | 17 | 0.925 | 0.925 | 0.912 | 0.46 |
-| whole-document | dense:trigram | 14 | 0.925 | 0.925 | 0.912 | 0.39 |
+| chunking | retriever | chunks | recall@3 | MRR@3 | nDCG@3 | nDCG 95% CI | vs best | ms/query |
+|---|---|---:|---:|---:|---:|---|---|---:|
+| paragraph | bm25 | 17 | 0.950 | 0.950 | 0.950 | 0.850-1.000 | tie | 0.02 |
+| whole-document | bm25 | 14 | 0.950 | 0.950 | 0.950 | 0.850-1.000 | tie | 0.04 |
+| paragraph | hybrid:trigram | 17 | 0.950 | 0.950 | 0.946 | 0.842-1.000 | tie | 0.93 |
+| fixed-20-overlap-5 | hybrid:trigram | 36 | 0.950 | 0.925 | 0.932 | 0.813-1.000 | tie | 1.87 |
+| whole-document | hybrid:trigram | 14 | 0.950 | 0.925 | 0.932 | 0.813-1.000 | tie | 0.79 |
+| fixed-20-overlap-5 | bm25 | 36 | 0.950 | 0.900 | 0.913 | 0.795-1.000 | tie | 0.03 |
+| fixed-20-overlap-5 | dense:trigram | 36 | 0.925 | 0.925 | 0.912 | 0.793-1.000 | tie | 1.82 |
+| paragraph | dense:trigram | 17 | 0.925 | 0.925 | 0.912 | 0.793-1.000 | tie | 0.90 |
+| whole-document | dense:trigram | 14 | 0.925 | 0.925 | 0.912 | 0.793-1.000 | tie | 0.79 |
+
+Every interval is a seeded bootstrap over queries (2,000 resamples). "vs best" compares each
+configuration with the top one on the same queries: "tie" means the paired 95% interval of the
+nDCG difference includes zero.
 
 What this shows, and what it does not:
 
-- On short, keyword-rich articles BM25 is hard to beat. It is also about 40 times faster here.
-- Hybrid only ties BM25 on this dataset. Its value is on wording BM25 cannot match: a query for
-  "refund" finds nothing with BM25 alone but finds the Refunds article with hybrid (see the tests).
-- Small fixed windows cut answers in half and lower MRR. Chunk size is a retrieval decision, not
-  just a context-window one.
+- **Twenty queries cannot separate these nine configurations.** Every one ties the best. The
+  ordering above is a hint, not a result; this is exactly the mistake the intervals are there
+  to catch.
+- BM25 is about 40 times faster than the dense and hybrid runs here, at no measurable cost in
+  quality on this data.
+- Hybrid's value is on wording BM25 cannot match: a query for "refund" finds nothing with BM25
+  alone but finds the Refunds article with hybrid (see the tests).
 - The trigram embedder is a lexical baseline, not a semantic model. Run the same config with
   `dense:voyage` and `hybrid:voyage` to measure what real embeddings add on your data.
-- 20 queries is a smoke test. Use the format below to benchmark your own corpus before deciding.
+- For a decision, use a few hundred labeled queries: your own, or a public BEIR dataset (below).
 
 ## Bring your own data
 
@@ -62,6 +68,11 @@ A dataset is a folder with two JSONL files:
 ```
 
 Every id in `relevant` must exist in `documents.jsonl`; the loader rejects the dataset otherwise.
+
+**BEIR datasets** load as they are: point `dataset` at a folder holding `corpus.jsonl`,
+`queries.jsonl`, and `qrels/test.tsv` (for example an unzipped
+[BEIR](https://github.com/beir-cellar/beir) dataset such as SciFact or FiQA). Relevance grades
+above 0 count as relevant, and queries with no relevant document in the split are skipped.
 Then point a config at it:
 
 ```yaml

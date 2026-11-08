@@ -13,3 +13,9 @@
   the test suite and CI need no network. Real embeddings are opt-in through Voyage AI.
 - **Strict dataset loading.** A query labeled with an unknown document id is a dataset bug that
   would silently lower recall; the loader fails instead.
+- **Bootstrap intervals, not p-values.** A seeded bootstrap over queries needs no distribution
+  assumptions or dependencies, reproduces exactly, and answers the practical question: could the
+  gap between two configurations be noise? Comparisons are paired (same queries), which is far
+  more sensitive than overlapping two unpaired intervals.
+- **BEIR as the second dataset format.** It is the common format for public IR benchmarks, so a
+  user can test on hundreds of real queries without writing a converter.
