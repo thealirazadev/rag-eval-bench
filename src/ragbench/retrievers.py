@@ -131,6 +131,10 @@ class TrigramEmbedder:
         return [v / norm for v in vector]
 
 
+class EmbeddingError(Exception):
+    """The embedding API could not be reached or refused the request."""
+
+
 class VoyageEmbedder:
     url = "https://api.voyageai.com/v1/embeddings"
 
@@ -142,15 +146,20 @@ class VoyageEmbedder:
     def embed(self, texts: Sequence[str], kind: str) -> list[list[float]]:
         vectors: list[list[float]] = []
         for start in range(0, len(texts), 128):
-            response = self._client.post(
-                self.url,
-                json={
-                    "input": list(texts[start : start + 128]),
-                    "model": self._model,
-                    "input_type": "query" if kind == "query" else "document",
-                },
-            )
-            response.raise_for_status()
+            try:
+                response = self._client.post(
+                    self.url,
+                    json={
+                        "input": list(texts[start : start + 128]),
+                        "model": self._model,
+                        "input_type": "query" if kind == "query" else "document",
+                    },
+                )
+            except httpx.HTTPError as exc:
+                raise EmbeddingError(f"Voyage API unreachable: {exc}") from exc
+            if response.status_code != 200:
+                hint = " (check VOYAGE_API_KEY)" if response.status_code in (401, 403) else ""
+                raise EmbeddingError(f"Voyage API returned HTTP {response.status_code}{hint}")
             data = sorted(response.json()["data"], key=lambda item: item["index"])
             vectors.extend(item["embedding"] for item in data)
         return vectors

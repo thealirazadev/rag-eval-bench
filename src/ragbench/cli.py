@@ -11,6 +11,7 @@ import yaml
 
 from ragbench.bench import run, to_markdown
 from ragbench.data import DatasetError, load_dataset
+from ragbench.retrievers import EmbeddingError
 
 
 def _load_config(path: Path) -> dict[str, Any]:
@@ -35,7 +36,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         config = _load_config(args.config)
         dataset = load_dataset((args.config.parent / config["dataset"]).resolve())
         results = run(dataset, config["chunkers"], config["retrievers"], int(config.get("k", 5)))
-    except (ValueError, DatasetError, OSError) as exc:
+    except (ValueError, DatasetError, EmbeddingError, OSError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
 
