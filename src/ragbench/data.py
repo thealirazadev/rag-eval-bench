@@ -44,8 +44,55 @@ def _read_jsonl(path: Path) -> list[dict[str, object]]:
     return rows
 
 
+def load_beir(directory: Path, split: str = "test") -> Dataset:
+    """Load a BEIR-format dataset: corpus.jsonl, queries.jsonl, and qrels/<split>.tsv.
+
+    Relevance grades above 0 count as relevant (metrics here are binary). Queries without a
+    relevant document in the split are dropped, as BEIR's own evaluation does.
+    """
+    qrels_path = directory / "qrels" / f"{split}.tsv"
+    if not qrels_path.exists():
+        raise DatasetError(f"missing {qrels_path}")
+    documents = tuple(
+        Document(id=str(row["_id"]), title=str(row.get("title", "")), text=str(row["text"]))
+        for row in _read_jsonl(directory / "corpus.jsonl")
+    )
+    known = {doc.id for doc in documents}
+    relevant: dict[str, set[str]] = {}
+    for number, line in enumerate(qrels_path.read_text(encoding="utf-8").splitlines(), 1):
+        fields = line.split("\t")
+        if number == 1 and fields[0] == "query-id":
+            continue
+        if len(fields) != 3:
+            raise DatasetError(f"{qrels_path}:{number}: expected query-id, corpus-id, score")
+        query_id, doc_id, score = fields
+        try:
+            graded = int(score) > 0
+        except ValueError as exc:
+            raise DatasetError(f"{qrels_path}:{number}: score must be an integer") from exc
+        if doc_id not in known:
+            raise DatasetError(f"{qrels_path}:{number}: unknown document id {doc_id!r}")
+        if graded:
+            relevant.setdefault(query_id, set()).add(doc_id)
+    queries = tuple(
+        Query(
+            id=str(row["_id"]), text=str(row["text"]), relevant=frozenset(relevant[str(row["_id"])])
+        )
+        for row in _read_jsonl(directory / "queries.jsonl")
+        if str(row["_id"]) in relevant
+    )
+    if not queries:
+        raise DatasetError(f"{qrels_path}: no query has a relevant document")
+    return Dataset(name=directory.name, documents=documents, queries=queries)
+
+
 def load_dataset(directory: Path) -> Dataset:
-    """Load ``documents.jsonl`` and ``queries.jsonl`` from a directory and validate the labels."""
+    """Load ``documents.jsonl`` and ``queries.jsonl`` from a directory and validate the labels.
+
+    A directory holding ``corpus.jsonl`` is read as a BEIR dataset instead (test split).
+    """
+    if (directory / "corpus.jsonl").exists():
+        return load_beir(directory)
     documents = tuple(
         Document(id=str(row["id"]), title=str(row.get("title", "")), text=str(row["text"]))
         for row in _read_jsonl(directory / "documents.jsonl")
