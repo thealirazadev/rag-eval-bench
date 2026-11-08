@@ -1,6 +1,6 @@
 [project]
 name = "rag-eval-bench"
-version = "0.1.0"
+version = "0.2.0"
 description = "Benchmark retrieval for RAG: compare chunking and BM25, dense, and hybrid retrievers with recall@k, MRR, and nDCG."
 readme = "README.md"
 requires-python = ">=3.11"
