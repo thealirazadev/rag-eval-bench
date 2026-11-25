@@ -203,8 +203,10 @@ class Hybrid:
     def search(self, query: str, k: int) -> list[Chunk]:
         scores: dict[str, float] = {}
         by_id: dict[str, Chunk] = {}
+        # Each part must rank at least k chunks, or a large k could never be filled.
+        depth = max(self.depth, k)
         for part in self.parts:
-            for rank, chunk in enumerate(part.search(query, self.depth)):
+            for rank, chunk in enumerate(part.search(query, depth)):
                 scores[chunk.id] = scores.get(chunk.id, 0.0) + 1.0 / (self.rrf_k + rank + 1)
                 by_id[chunk.id] = chunk
         ranked = sorted(scores, key=lambda cid: (-scores[cid], cid))

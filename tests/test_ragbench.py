@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from ragbench.bench import make_retriever, run, to_markdown
+from ragbench.bench import make_retriever, run, to_markdown, top_documents
 from ragbench.chunking import Chunk, build_chunker, fixed_words, paragraphs, whole_document
 from ragbench.cli import main
 from ragbench.data import DatasetError, Document, load_dataset
@@ -132,3 +132,29 @@ def test_cli_reports_config_errors(tmp_path: Path) -> None:
     config.write_text("dataset: nowhere\n")
 
     assert main(["run", str(config)]) == 2
+
+
+def test_fetch_widens_until_k_distinct_documents() -> None:
+    # Twelve "alpha alpha" chunks of one document outrank the only chunk of the other, so the
+    # first fetch of 5k = 10 chunks holds a single document. Scoring that short list would put
+    # recall@2 at 0.5 although both relevant documents are retrievable.
+    docs = [
+        Document("a", "", " ".join(["alpha"] * 24)),
+        Document("b", "", "alpha beta"),
+    ]
+    chunked = fixed_words(2)(docs)
+    retriever = BM25()
+    retriever.index(chunked)
+
+    ranked = top_documents(retriever, "alpha", 2, len(chunked))
+
+    assert ranked_documents(retriever.search("alpha", 10)) == ["a"]
+    assert ranked == ["a", "b"]
+    assert recall_at_k(ranked, frozenset({"a", "b"}), 2) == 1.0
+
+
+def test_hybrid_ranks_at_least_k_chunks_per_part() -> None:
+    hybrid = Hybrid([BM25()], depth=2)
+    hybrid.index(fixed_words(2)([Document("a", "", " ".join(["alpha"] * 12))]))
+
+    assert len(hybrid.search("alpha", 5)) == 5
