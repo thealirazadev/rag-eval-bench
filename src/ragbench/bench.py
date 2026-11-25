@@ -80,6 +80,20 @@ class Scores:
     per_query_ndcg: tuple[float, ...]
 
 
+def top_documents(retriever: Retriever, query: str, k: int, total_chunks: int) -> list[str]:
+    """Documents in rank order, fetching more chunks until k distinct documents are found.
+
+    Starts at 5k chunks and widens until there are k documents or every chunk has been fetched,
+    so a chunker that splits one document into many chunks cannot leave the top k short.
+    """
+    fetch = k * 5
+    while True:
+        ranked = ranked_documents(retriever.search(query, fetch))
+        if len(ranked) >= k or fetch >= total_chunks:
+            return ranked
+        fetch = min(fetch * 4, total_chunks)
+
+
 def evaluate(dataset: Dataset, chunker: Chunker, retriever: Retriever, k: int) -> Scores:
     chunks = chunker(dataset.documents)
     retriever.index(chunks)
@@ -87,8 +101,7 @@ def evaluate(dataset: Dataset, chunker: Chunker, retriever: Retriever, k: int) -
     ndcgs: list[float] = []
     started = time.perf_counter()
     for query in dataset.queries:
-        # Fetch extra chunks so k distinct documents are available after de-duplication.
-        ranked = ranked_documents(retriever.search(query.text, k * 5))
+        ranked = top_documents(retriever, query.text, k, len(chunks))
         recall += recall_at_k(ranked, query.relevant, k)
         mrr += mrr_at_k(ranked, query.relevant, k)
         ndcgs.append(ndcg_at_k(ranked, query.relevant, k))
