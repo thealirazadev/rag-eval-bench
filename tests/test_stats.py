@@ -59,3 +59,12 @@ def test_run_reports_intervals_for_every_configuration() -> None:
     )
 
     assert all(r.as_dict()["ndcg_ci"] == [1.0, 1.0] for r in results)
+
+
+def test_a_lower_level_gives_a_narrower_interval_inside_the_wider_one() -> None:
+    scores = [1.0, 0.0, 1.0, 1.0, 0.5, 0.0, 1.0, 1.0, 0.25, 0.75]
+    wide_low, wide_high = confidence_interval(scores, level=0.95)
+    narrow_low, narrow_high = confidence_interval(scores, level=0.5)
+
+    assert wide_low <= narrow_low <= narrow_high <= wide_high
+    assert narrow_high - narrow_low < wide_high - wide_low
